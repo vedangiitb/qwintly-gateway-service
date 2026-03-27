@@ -52,7 +52,7 @@ jobs:
             --image $IMAGE \
             --region ${{ vars.REGION }} \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
             --service-account ${{ vars.GATEWAY_SA_EMAIL }} \
             --set-secrets NEXT_PUBLIC_SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-secret-key:latest \
             --min-instances 0 \
