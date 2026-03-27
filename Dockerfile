@@ -8,6 +8,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY index.ts ./
 COPY middleware ./middleware
+COPY repository ./repository
 COPY services ./services
 COPY utils ./utils
 COPY lib ./lib
