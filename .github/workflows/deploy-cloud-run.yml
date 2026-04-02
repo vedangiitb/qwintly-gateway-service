@@ -54,7 +54,8 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --service-account ${{ vars.GATEWAY_SA_EMAIL }} \
-            --set-secrets SUPABASE_URL_PROD=${{vars.SUPABASE_URL_PROD}},SUPABASE_SECRET_KEY_PROD=supabase-secret-key:latest,SUPABASE_URL_DEV=${{vars.SUPABASE_URL_DEV}},SUPABASE_SECRET_KEY_DEV=${{ github.ref_name == 'main' && 'supabase-secret-key-dev:latest' || 'supabase-secret-key:latest' }} \
+            --set-env-vars SUPABASE_URL_PROD=${{ vars.SUPABASE_URL_PROD }},SUPABASE_URL_DEV=${{ vars.SUPABASE_URL_DEV }} \
+            --set-secrets SUPABASE_SECRET_KEY_PROD=supabase-secret-key:latest,SUPABASE_SECRET_KEY_DEV=supabase-secret-key-dev:latest \
             --min-instances 0 \
             --max-instances 10 \
             --concurrency 1 \
