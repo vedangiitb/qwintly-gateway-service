@@ -1,6 +1,15 @@
-import { supabaseAdmin } from "../lib/supabase-admin.js";
+import { getSupabaseAdmin } from "../lib/supabase-admin.js";
+
+type Env = "prod" | "dev";
+
 export class DBRepository {
+  private readonly env: Env;
+
+  constructor(env: Env) {
+    this.env = env;
+  }
+
   protected get client() {
-    return supabaseAdmin;
+    return getSupabaseAdmin(this.env);
   }
 }

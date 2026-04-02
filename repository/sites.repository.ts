@@ -1,6 +1,10 @@
 import { DBRepository } from "./repository.js";
 
 export class SitesRepository extends DBRepository {
+  constructor(env: Env) {
+    super(env);
+  }
+
   /*
    * Table: project_sites
    * Use: Fetch Cloudrun Site based on project id (READ)
