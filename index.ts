@@ -24,7 +24,7 @@ app.use(requestLogger.middleware);
 app.use(shutdownHandler.middleware);
 
 app.use(async (req, res) => {
-  const { projectId, env } = extractProjectInfo(req.headers.host);
+  const { projectId, env } = extractProjectInfo(req.headers);
   if (!projectId) {
     return res.status(400).send("Invalid host");
   }
