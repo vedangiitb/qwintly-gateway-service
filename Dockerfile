@@ -12,6 +12,8 @@ COPY repository ./repository
 COPY services ./services
 COPY utils ./utils
 COPY lib ./lib
+COPY constants ./constants
+COPY types ./types
 
 RUN npm run build \
   && npm prune --omit=dev

@@ -1,10 +1,10 @@
-import "./utils/env";
 import express from "express";
 import httpProxy from "http-proxy";
 import { createRequestLogger } from "./middleware/requestLogger";
 import { createShutdownHandler } from "./middleware/shutdown";
+import { extractProjectInfo } from "./services/extractInfo.service";
 import { urlLookupService } from "./services/urlLookup.service";
-import { extractProjectId } from "./utils/extractProjectId.helper";
+import "./utils/env";
 import { logJson } from "./utils/logger";
 import { isAllowedTarget } from "./utils/validateTarget.helper";
 
@@ -24,12 +24,12 @@ app.use(requestLogger.middleware);
 app.use(shutdownHandler.middleware);
 
 app.use(async (req, res) => {
-  const projectId = extractProjectId(req.headers.host);
+  const { projectId, env } = extractProjectInfo(req.headers.host);
   if (!projectId) {
     return res.status(400).send("Invalid host");
   }
 
-  const target = await urlLookupService(projectId);
+  const target = await urlLookupService(projectId, env);
 
   if (!target) {
     return res.status(404).send("Not found");
