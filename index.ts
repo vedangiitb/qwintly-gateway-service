@@ -24,19 +24,39 @@ app.use(requestLogger.middleware);
 app.use(shutdownHandler.middleware);
 
 app.use(async (req, res) => {
-  const { projectId, env } = extractProjectInfo(req.headers);
-  if (!projectId) {
+  const projectInfo = extractProjectInfo(req.headers);
+  if (!projectInfo) {
     return res.status(400).send("Invalid host");
   }
 
-  const target = await urlLookupService(projectId, env);
+  if (projectInfo.kind === "preview") {
+    const target =
+      projectInfo.env === "dev"
+        ? process.env.RENDERER_URL_DEV
+        : process.env.RENDERER_URL_PROD;
 
-  if (!target) {
-    return res.status(404).send("Not found");
+    if (!target) {
+      logJson("error", "missing_renderer_url", { env: projectInfo.env });
+      return res.status(500).send("Misconfigured renderer");
+    }
+
+    proxy.web(req, res, {
+      target,
+      changeOrigin: true,
+      proxyTimeout: PROXY_TIMEOUT_MS,
+      timeout: PROXY_TIMEOUT_MS,
+      headers: {
+        "x-gen-session-id": projectInfo.genId,
+      },
+    });
+
+    return;
   }
-  if (!isAllowedTarget(target)) {
-    return res.status(403).send("Forbidden");
-  }
+
+  const target = await urlLookupService(projectInfo.projectId, projectInfo.env);
+
+  if (!target) return res.status(404).send("Not found");
+  if (!isAllowedTarget(target)) return res.status(403).send("Forbidden");
 
   proxy.web(req, res, {
     target,
