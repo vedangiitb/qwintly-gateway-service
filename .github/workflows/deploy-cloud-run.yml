@@ -54,7 +54,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --service-account ${{ vars.GATEWAY_SA_EMAIL }} \
-            --set-env-vars SUPABASE_URL_PROD=${{ vars.SUPABASE_URL_PROD }},SUPABASE_URL_DEV=${{ vars.SUPABASE_URL_DEV }} \
+            --set-env-vars SUPABASE_URL_PROD=${{ vars.SUPABASE_URL_PROD }},SUPABASE_URL_DEV=${{ vars.SUPABASE_URL_DEV }},RENDERER_URL_DEV=${{vars.RENDERER_URL_DEV}},RENDERER_URL_PROD=${{vars.RENDERER_URL_PROD}} \
             --set-secrets SUPABASE_SECRET_KEY_PROD=supabase-secret-key:latest,SUPABASE_SECRET_KEY_DEV=supabase-secret-key-dev:latest \
             --min-instances 0 \
             --max-instances 10 \

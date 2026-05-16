@@ -19,6 +19,7 @@ export const extractProjectInfo = (
     if (!isValidProjectId(projectId)) return null;
 
     return {
+      kind: "project",
       projectId,
       env: envs.DEV as Env,
     };
@@ -32,7 +33,36 @@ export const extractProjectInfo = (
     if (!isValidProjectId(projectId)) return null;
 
     return {
+      kind: "project",
       projectId,
+      env: envs.PROD as Env,
+    };
+  }
+
+  // dev previews: uuid-devpreviews
+  const devPreviewMatch = subdomain.match(/^([a-z0-9-]+)-devpreviews$/);
+  if (devPreviewMatch) {
+    const genId = devPreviewMatch[1];
+
+    if (!isValidGenId(genId)) return null;
+
+    return {
+      kind: "preview",
+      genId,
+      env: envs.DEV as Env,
+    };
+  }
+
+  // prod previews: uuid-previews
+  const prodPreviewMatch = subdomain.match(/^([a-z0-9-]+)-previews$/);
+  if (prodPreviewMatch) {
+    const genId = prodPreviewMatch[1];
+
+    if (!isValidGenId(genId)) return null;
+
+    return {
+      kind: "preview",
+      genId,
       env: envs.PROD as Env,
     };
   }
@@ -73,6 +103,21 @@ export const isValidProjectId = (projectId: string): boolean => {
 
   // length limit (DNS label max = 63)
   if (projectId.length > 50) return false;
+
+  return true;
+};
+
+const isValidGenId = (genId: string): boolean => {
+  if (!genId) return false;
+
+  // allowed chars (DNS label safe)
+  if (!/^[a-z0-9-]+$/.test(genId)) return false;
+
+  // no leading/trailing hyphens
+  if (genId.startsWith("-") || genId.endsWith("-")) return false;
+
+  // length limit (DNS label max = 63)
+  if (genId.length > 63) return false;
 
   return true;
 };
