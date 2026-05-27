@@ -5,14 +5,9 @@ type Env = "prod" | "dev";
 const clientCache = new Map<Env, SupabaseClient>();
 
 const getEnvVar = (env: Env, key: "url" | "secret"): string => {
+  const suffix = env === "prod" ? "PROD" : "DEV";
   const envKey =
-    key === "url"
-      ? env === "prod"
-        ? "SUPABASE_URL_PROD"
-        : "SUPABASE_URL_DEV"
-      : env === "prod"
-        ? "SUPABASE_SECRET_KEY_PROD"
-        : "SUPABASE_SECRET_KEY_DEV";
+    key === "url" ? `SUPABASE_URL_${suffix}` : `SUPABASE_SECRET_KEY_${suffix}`;
 
   const value = process.env[envKey];
   if (!value) {

@@ -1,4 +1,4 @@
-import { IncomingHttpHeaders } from "http";
+import { IncomingHttpHeaders } from "node:http";
 import { envs } from "../constants/projectInfo.constants";
 
 export const extractProjectInfo = (
@@ -12,7 +12,7 @@ export const extractProjectInfo = (
   const { subdomain } = parsed;
 
   // dev: uuid-devprojects
-  const devMatch = subdomain.match(/^([a-z0-9-]+)-devprojects$/);
+  const devMatch = /^([a-z0-9-]+)-devprojects$/.exec(subdomain);
   if (devMatch) {
     const projectId = devMatch[1];
 
@@ -26,7 +26,7 @@ export const extractProjectInfo = (
   }
 
   // prod: uuid-projects
-  const prodMatch = subdomain.match(/^([a-z0-9-]+)-projects$/);
+  const prodMatch = /^([a-z0-9-]+)-projects$/.exec(subdomain);
   if (prodMatch) {
     const projectId = prodMatch[1];
 
@@ -40,7 +40,7 @@ export const extractProjectInfo = (
   }
 
   // dev previews: uuid-devpreviews
-  const devPreviewMatch = subdomain.match(/^([a-z0-9-]+)-devpreviews$/);
+  const devPreviewMatch = /^([a-z0-9-]+)-devpreviews$/.exec(subdomain);
   if (devPreviewMatch) {
     const genId = devPreviewMatch[1];
 
@@ -54,7 +54,7 @@ export const extractProjectInfo = (
   }
 
   // prod previews: uuid-previews
-  const prodPreviewMatch = subdomain.match(/^([a-z0-9-]+)-previews$/);
+  const prodPreviewMatch = /^([a-z0-9-]+)-previews$/.exec(subdomain);
   if (prodPreviewMatch) {
     const genId = prodPreviewMatch[1];
 

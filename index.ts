@@ -9,6 +9,7 @@ import { logJson } from "./utils/logger";
 import { isAllowedTarget } from "./utils/validateTarget.helper";
 
 const app = express();
+app.disable("x-powered-by");
 const proxy = httpProxy.createProxyServer({});
 const PROXY_TIMEOUT_MS = 10_000;
 

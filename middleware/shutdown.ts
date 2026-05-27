@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import type { Server } from "http";
+import type { Server } from "node:http";
 import type { LogLevel } from "../utils/logger";
 
 type LogFn = (

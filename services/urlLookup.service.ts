@@ -23,7 +23,7 @@ export const urlLookupService = async (
 
   const cached = cache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
-    return Promise.resolve(cached.value);
+    return cached.value;
   }
   if (cached) cache.delete(key);
 
