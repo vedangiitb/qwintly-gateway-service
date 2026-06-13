@@ -35,7 +35,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          environment: ${{ github.ref_name == 'main' && '' || 'dev' }}
+          environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
           secrets: |
             SUPABASE_URL_PROD
             SUPABASE_URL_DEV
