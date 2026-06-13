@@ -28,7 +28,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<Response> {
     if (!orchestrator) {
       const config = new AppConfig(env);
