@@ -61,7 +61,7 @@ describe("GatewayOrchestrator", () => {
       kind: "project",
       projectId: "proj-1",
       env: "prod",
-    }));
+    } as const));
 
     const request = new Request("https://proj-1-projects.qwintly.com/");
     const response = await orchestrator.handle(request);
