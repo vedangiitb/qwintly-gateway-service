@@ -1,25 +1,23 @@
 import { envs } from "../constants/projectInfo.constants";
-import { SitesRepository } from "../repository/sites.repository";
 
-const repoCache = new Map<Env, SitesRepository>();
-
-const getSitesRepo = (env: Env) => {
-  const cached = repoCache.get(env);
-  if (cached) return cached;
-  const repo = new SitesRepository(env);
-  repoCache.set(env, repo);
-  return repo;
-};
 const cache = new Map<string, { value: string; expiresAt: number }>();
-const CACHE_TTL_MS = Number(
-  process.env.URL_LOOKUP_CACHE_TTL_MS ?? 3 * 60 * 60 * 1000,
-);
 
 export const urlLookupService = async (
   projectId: string,
-  env: Env = envs.PROD as Env,
-) => {
-  const key = `${projectId}:${env}`;
+  envName: Env = envs.PROD as Env,
+  env: {
+    SUPABASE_URL_PROD?: string;
+    SUPABASE_SECRET_KEY_PROD?: string;
+    SUPABASE_URL_DEV?: string;
+    SUPABASE_SECRET_KEY_DEV?: string;
+    URL_LOOKUP_CACHE_TTL_MS?: string;
+  },
+): Promise<string | null> => {
+  const key = `${projectId}:${envName}`;
+
+  const cacheTtl = Number(
+    env.URL_LOOKUP_CACHE_TTL_MS ?? 3 * 60 * 60 * 1000,
+  );
 
   const cached = cache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
@@ -27,11 +25,46 @@ export const urlLookupService = async (
   }
   if (cached) cache.delete(key);
 
-  return getSitesRepo(env).fetchSite(projectId).then((url) => {
+  const suffix = envName === "prod" ? "PROD" : "DEV";
+  const supabaseUrl = env[`SUPABASE_URL_${suffix}`];
+  const supabaseSecret = env[`SUPABASE_SECRET_KEY_${suffix}`];
+
+  if (!supabaseUrl || !supabaseSecret) {
+    console.error(`Missing Supabase config for ${envName}`);
+    return null;
+  }
+
+  const baseUrl = supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl;
+  const queryUrl = `${baseUrl}/rest/v1/project_sites?select=cloudrun_url&conv_id=eq.${encodeURIComponent(projectId)}`;
+
+  try {
+    const response = await fetch(queryUrl, {
+      method: "GET",
+      headers: {
+        "apikey": supabaseSecret,
+        "Authorization": `Bearer ${supabaseSecret}`,
+        "Accept": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Supabase fetch failed: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = (await response.json()) as { cloudrun_url: string }[];
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const url = data[0].cloudrun_url;
     cache.set(key, {
       value: url,
-      expiresAt: Date.now() + CACHE_TTL_MS,
+      expiresAt: Date.now() + cacheTtl,
     });
     return url;
-  });
+  } catch (err) {
+    console.error(`Error looking up site ${projectId}:`, err);
+    return null;
+  }
 };

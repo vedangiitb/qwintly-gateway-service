@@ -1,12 +1,9 @@
-import { IncomingHttpHeaders } from "node:http";
 import { envs } from "../constants/projectInfo.constants";
 
 export const extractProjectInfo = (
-  hostHeader: IncomingHttpHeaders,
+  host: string | undefined,
 ): ProjectInfo => {
-  const rawHost = hostHeader["x-forwarded-host"] ?? hostHeader["host"];
-  const host = Array.isArray(rawHost) ? rawHost[0] : rawHost;
-  const parsed = parseHost(host as string | undefined);
+  const parsed = parseHost(host);
   if (!parsed) return null;
 
   const { subdomain } = parsed;
