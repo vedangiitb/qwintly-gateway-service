@@ -5,7 +5,7 @@ export interface ITargetValidator {
 }
 
 export class SuffixTargetValidator implements ITargetValidator {
-  private config: IConfig;
+  private readonly config: IConfig;
 
   constructor(config: IConfig) {
     this.config = config;

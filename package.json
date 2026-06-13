@@ -12,18 +12,29 @@
   },
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/**/*.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240403.0",
     "@types/node": "^22.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "@vitest/coverage-v8": "^4.1.8",
+    "eslint": "^9.39.4",
     "typescript": "^5.8.2",
     "vitest": "^4.1.8",
-    "wrangler": "^3.57.1"
+    "wrangler": "^3.111.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "undici": "^6.26.0",
+    "ws": "^8.21.0"
   }
 }
