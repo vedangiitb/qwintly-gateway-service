@@ -1,19 +1,18 @@
-type Env = "prod" | "dev";
+export type EnvType = "prod" | "dev";
 
-type ProjectInfo =
+export type ProjectInfo =
   | {
       kind: "project";
       projectId: string;
-      env: Env;
+      env: EnvType;
     }
   | {
       kind: "preview";
       genId: string;
-      env: Env;
-    }
-  | null;
+      env: EnvType;
+    };
 
-type ParsedHost = {
+export interface ParsedHost {
   host: string;
   subdomain: string;
-} | null;
+}
