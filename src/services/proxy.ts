@@ -48,7 +48,10 @@ export class DefaultRequestProxy implements IRequestProxy {
           ? undefined
           : request.body,
       redirect: "manual",
-    });
+      ...(request.method !== "GET" && request.method !== "HEAD" && request.body
+        ? { duplex: "half" }
+        : {}),
+    } as any);
 
     return fetch(newRequest);
   }
