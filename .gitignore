@@ -12,6 +12,10 @@ pnpm-debug.log*
 # Env
 .env
 .env.*
+.dev.vars
+
+# Wrangler
+.wrangler/
 
 # Build output
 /dist/

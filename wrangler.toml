@@ -1,0 +1,10 @@
+name = "qwintly-gateway-worker"
+main = "index.ts"
+compatibility_date = "2024-04-03"
+
+[vars]
+ALLOWED_TARGET_HOST_SUFFIX = ".run.app"
+URL_LOOKUP_CACHE_TTL_MS = "10800000"
+
+[env.dev]
+name = "qwintly-gateway-worker-dev"

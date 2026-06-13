@@ -1,86 +1,115 @@
-import express from "express";
-import httpProxy from "http-proxy";
-import { createRequestLogger } from "./middleware/requestLogger";
-import { createShutdownHandler } from "./middleware/shutdown";
 import { extractProjectInfo } from "./services/extractInfo.service";
 import { urlLookupService } from "./services/urlLookup.service";
-import "./utils/env";
-import { logJson } from "./utils/logger";
 import { isAllowedTarget } from "./utils/validateTarget.helper";
 
-const app = express();
-app.disable("x-powered-by");
-const proxy = httpProxy.createProxyServer({});
-const PROXY_TIMEOUT_MS = 10_000;
+export interface Env {
+  RENDERER_URL_DEV: string;
+  RENDERER_URL_PROD: string;
+  SUPABASE_URL_PROD: string;
+  SUPABASE_SECRET_KEY_PROD: string;
+  SUPABASE_URL_DEV: string;
+  SUPABASE_SECRET_KEY_DEV: string;
+  ALLOWED_TARGET_HOST_SUFFIX?: string;
+  URL_LOOKUP_CACHE_TTL_MS?: string;
+}
 
-app.set("trust proxy", true);
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const incomingUrl = new URL(request.url);
 
-const requestLogger = createRequestLogger(logJson);
-const shutdownHandler = createShutdownHandler(
-  logJson,
-  requestLogger.getInflight,
-);
-
-app.use(requestLogger.middleware);
-app.use(shutdownHandler.middleware);
-
-app.use(async (req, res) => {
-  const projectInfo = extractProjectInfo(req.headers);
-  if (!projectInfo) {
-    return res.status(400).send("Invalid host");
-  }
-
-  if (projectInfo.kind === "preview") {
-    const target =
-      projectInfo.env === "dev"
-        ? process.env.RENDERER_URL_DEV
-        : process.env.RENDERER_URL_PROD;
-
-    if (!target) {
-      logJson("error", "missing_renderer_url", { env: projectInfo.env });
-      return res.status(500).send("Misconfigured renderer");
+    // 1. Check special static hostnames
+    let targetHost: string | null = null;
+    if (incomingUrl.hostname === "dev.qwintly.com") {
+      targetHost = "qwintly-459117541379.us-central1.run.app";
+    } else if (incomingUrl.hostname === "docs.qwintly.com") {
+      targetHost = "qwintly-docs-620406862138.asia-south1.run.app";
     }
 
-    proxy.web(req, res, {
-      target,
-      changeOrigin: true,
-      proxyTimeout: PROXY_TIMEOUT_MS,
-      timeout: PROXY_TIMEOUT_MS,
-      headers: {
-        "x-gen-session-id": projectInfo.genId,
-      },
+    if (targetHost) {
+      const targetUrl = new URL(request.url);
+      targetUrl.hostname = targetHost;
+
+      const headers = new Headers(request.headers);
+      headers.set("host", targetHost);
+      headers.set("x-forwarded-host", incomingUrl.hostname);
+
+      const newRequest = new Request(targetUrl.toString(), {
+        method: request.method,
+        headers,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+        redirect: "manual",
+      });
+
+      return fetch(newRequest);
+    }
+
+    // 2. Otherwise handle *.qwintly.com multi-tenant routing
+    const projectInfo = extractProjectInfo(incomingUrl.hostname);
+    if (!projectInfo) {
+      return new Response("Invalid host", { status: 400 });
+    }
+
+    let target: string | null = null;
+
+    if (projectInfo.kind === "preview") {
+      target = projectInfo.env === "dev"
+        ? env.RENDERER_URL_DEV
+        : env.RENDERER_URL_PROD;
+
+      if (!target) {
+        console.error("Missing renderer URL for env:", projectInfo.env);
+        return new Response("Misconfigured renderer", { status: 500 });
+      }
+
+      const targetUrl = new URL(request.url);
+      const parsedTarget = new URL(target);
+      targetUrl.protocol = parsedTarget.protocol;
+      targetUrl.hostname = parsedTarget.hostname;
+      targetUrl.port = parsedTarget.port;
+
+      const headers = new Headers(request.headers);
+      headers.set("host", parsedTarget.host);
+      headers.set("x-forwarded-host", incomingUrl.hostname);
+      headers.set("x-gen-session-id", projectInfo.genId);
+
+      const newRequest = new Request(targetUrl.toString(), {
+        method: request.method,
+        headers,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+        redirect: "manual",
+      });
+
+      return fetch(newRequest);
+    }
+
+    // Project routing
+    target = await urlLookupService(projectInfo.projectId, projectInfo.env, env);
+
+    if (!target) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    if (!isAllowedTarget(target, env)) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    const targetUrl = new URL(request.url);
+    const parsedTarget = new URL(target);
+    targetUrl.protocol = parsedTarget.protocol;
+    targetUrl.hostname = parsedTarget.hostname;
+    targetUrl.port = parsedTarget.port;
+
+    const headers = new Headers(request.headers);
+    headers.set("host", parsedTarget.host);
+    headers.set("x-forwarded-host", incomingUrl.hostname);
+
+    const newRequest = new Request(targetUrl.toString(), {
+      method: request.method,
+      headers,
+      body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+      redirect: "manual",
     });
 
-    return;
+    return fetch(newRequest);
   }
-
-  const target = await urlLookupService(projectInfo.projectId, projectInfo.env);
-
-  if (!target) return res.status(404).send("Not found");
-  if (!isAllowedTarget(target)) return res.status(403).send("Forbidden");
-
-  proxy.web(req, res, {
-    target,
-    changeOrigin: true,
-    proxyTimeout: PROXY_TIMEOUT_MS,
-    timeout: PROXY_TIMEOUT_MS,
-  });
-});
-
-proxy.on("error", (err, req, res) => {
-  const response = res as express.Response;
-  logJson("error", "proxy_error", {
-    message: err.message,
-    code: (err as { code?: string }).code,
-  });
-  if (response.headersSent) {
-    return response.end();
-  }
-  response.status(502).send("Bad gateway");
-});
-
-const server = app.listen(8080);
-server.requestTimeout = PROXY_TIMEOUT_MS;
-server.headersTimeout = PROXY_TIMEOUT_MS + 5_000;
-
-shutdownHandler.initSignalHandlers(server);
+};
